@@ -28,14 +28,13 @@ export function queryBuilder(
     };
   }
 
-  console.log(defaultConfig.url);
   return function <T>(method = "get", config = fetcherConfig): any {
     return fetch(defaultConfig?.url, {
       method,
       // @ts-expect-error: we are sure of the type of config
       ...config,
     }).then((response) => {
-      return response.json()
+      return response.json();
     });
   };
 }
@@ -58,7 +57,6 @@ export function useResource<T>(
   const builder = localFetcher(baseUrl, fetcherConfig);
 
   const fetchRequest = async () => {
-    console.log("Here we go");
     try {
       isLoading.value = true;
       data.value = undefined;
@@ -75,13 +73,11 @@ export function useResource<T>(
     data.value = payload;
   };
 
-  console.log({ fetcherConfig })
   if (
     !fetcherConfig ||
     typeof fetcherConfig == "string" ||
     fetcherConfig?.method == "get"
   ) {
-    console.log("called");
     fetchRequest();
   }
 
@@ -126,22 +122,23 @@ export function createResource({
   piniaPath,
   baseUrl,
   endpoints,
-}: CreateResourceProps): Record<string, ResourceHookCaller> {
-  console.log(endpoints);
-  const endpointconfig = endpoints(createBuilder(baseUrl));
+}: CreateResourceProps) {
+  const context: Record<string, ResourceHookCaller> = {};
 
-  return Object.entries(endpointconfig).reduce(
-    (reducer, [hookName, config]) => {
+  Object.entries(endpoints(createBuilder(baseUrl))).forEach(
+    ([hookName, config]) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - this is a hack to get the type of the function
-      reducer[`use${capitalize(hookName)}Resource`] = function <T>() {
+      const builtEndpointName = `use${capitalize(hookName)}Resource`;
+      const functionDefinition = function <T>() {
         return useResource<T>(baseUrl, config, queryBuilder);
       };
-
-      return reducer;
+      Object.assign(context || {}, {[builtEndpointName]: functionDefinition });
     },
     {}
   );
+
+  return context;
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

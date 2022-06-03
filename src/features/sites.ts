@@ -30,3 +30,5 @@ export const siteSlice = createResource({
     };
   },
 });
+
+export const { useFetchSitesResource, useRunCheckResource } = siteSlice;

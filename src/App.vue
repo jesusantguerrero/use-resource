@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { siteSlice } from "./features/sites";
+import { useFetchSitesResource, useRunCheckResource, siteSlice } from "./features/sites";
 interface ISite {
   id: number;
   createdAt: string;
@@ -11,14 +11,9 @@ interface ISite {
   results: string[];
   published: boolean;
 }
-const { execute: runCheck, isLoading: isChecking } =
-  siteSlice.useRunCheckResource();
+const { execute: runCheck, isLoading: isChecking } = useRunCheckResource();
 
-const {
-  data: sites,
-  refresh,
-  isLoading,
-} = siteSlice.useFetchSitesResource<ISite[]>();
+const { data: sites, refresh, isLoading } = useFetchSitesResource<ISite[]>();
 </script>
 
 <template>
