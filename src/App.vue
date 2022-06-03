@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useResource } from ".";
+import { siteSlice } from "./features/sites";
 interface ISite {
   id: number;
   createdAt: string;
@@ -11,18 +11,24 @@ interface ISite {
   results: string[];
   published: boolean;
 }
+const { execute: runCheck, isLoading: isChecking } =
+  siteSlice.useRunCheckResource();
+
 const {
   data: sites,
   refresh,
   isLoading,
-} = useResource<ISite[]>("http://161.35.141.190:5000/api/v1/sites");
+} = siteSlice.useFetchSitesResource<ISite[]>();
 </script>
 
 <template>
   <main>
     <header>
-      <h1>Sites</h1>
+      <h1>These Are the site versions</h1>
       <button @click="refresh()">Reload</button>
+      <button @click="runCheck">
+        {{ isChecking ? "Checking..." : "Check Sites" }}
+      </button>
     </header>
     <ul v-if="sites">
       <li v-for="site in sites" :key="site.id">

@@ -29,10 +29,8 @@ describe("useResource", () => {
   it("should request data immediately", async () => {
     const { data, isLoading } = useResource(siteEndpoint);
 
-    const wasLoading = isLoading.value;
     await until(isLoading).toBe(false);
 
-    expect(wasLoading).toBeTruthy();
     expect(fetchSpy).toHaveBeenCalled();
     expect(data.value).toBeTruthy();
   });
