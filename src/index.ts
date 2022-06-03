@@ -1,4 +1,4 @@
-import { onMounted, ref, type Ref } from "vue";
+import { ref, type Ref } from "vue";
 
 export interface ResourceResult<T> {
   data: Ref<T | null>;
@@ -31,6 +31,7 @@ export function useResource<T>(
   const builder = localFetcher(baseUrl);
 
   const fetchRequest = async () => {
+    console.log("Here we go");
     try {
       isLoading.value = true;
       data.value = null;
@@ -43,9 +44,7 @@ export function useResource<T>(
     }
   };
 
-  onMounted(() => {
-    fetchRequest();
-  });
+  fetchRequest();
 
   return {
     data,

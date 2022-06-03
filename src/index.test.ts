@@ -1,13 +1,23 @@
-import { it, describe, expect, vi } from "vitest";
+import { it, describe, expect, vi, beforeAll, afterAll } from "vitest";
 import { useResource, type ResourceResult } from ".";
 import { withSetup } from "./utils/testHelpers";
 import { until } from "@vueuse/core";
+import { server } from "./__tests__/mocks/server";
 
 const fetchSpy = vi.spyOn(window, "fetch");
+const siteEndpoint = "https://example.com/api/sites";
 describe("useResource", () => {
+  beforeAll(() => {
+    server.listen();
+  });
+
+  afterAll(() => {
+    server.close();
+  });
+
   it("should request", async () => {
     const [result] = withSetup<ResourceResult<[]>>(() =>
-      useResource("http://161.35.141.190:5000/api/v1/sites")
+      useResource(siteEndpoint)
     );
     expect(result.isLoading).toBeTruthy();
     await result.refresh().then(() => {
@@ -16,13 +26,14 @@ describe("useResource", () => {
     });
   });
 
-  it("should request data on setup", async () => {
-    const [result] = withSetup<ResourceResult<[]>>(() =>
-      useResource("http://161.35.141.190:5000/api/v1/sites")
-    );
-    expect(result.isLoading.value).toBeTruthy();
+  it("should request data immediately", async () => {
+    const { data, isLoading } = useResource(siteEndpoint);
+
+    const wasLoading = isLoading.value;
+    await until(isLoading).toBe(false);
+
+    expect(wasLoading).toBeTruthy();
     expect(fetchSpy).toHaveBeenCalled();
-    await until(result.isLoading.value).toBe(false);
-    expect(result.data.value).toBeTruthy();
+    expect(data.value).toBeTruthy();
   });
 });
