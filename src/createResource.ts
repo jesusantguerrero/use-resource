@@ -7,6 +7,11 @@ export interface CreateResourceProps {
   baseUrl: string;
   endpoints: (builder: any) => Record<string, any>;
 }
+
+export interface ResourceReturn {
+    piniaPath: string;
+    getStores: () =>     
+}
 export function createResource({
   piniaPath,
   baseUrl,
