@@ -35,6 +35,6 @@ export const { useFetchSitesResource, useRunCheckResource, piniaPath } =
   siteSlice;
 
 export const useStore = <T>() => {
-    const store = defineStore(siteSlice.piniaPath, siteSlice.getStores<T>);
-    return store()
-}
+  const store = defineStore(siteSlice.piniaPath, siteSlice.getStores<T>());
+  return store();
+};

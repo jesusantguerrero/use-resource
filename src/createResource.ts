@@ -29,7 +29,7 @@ export function createResource({
 
   return {
     piniaPath,
-    getStores: <T>() => generateStores<T>(context)(),
+    getStores: <T>() => generateStores<T>(context),
     ...context,
   };
 }
