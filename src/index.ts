@@ -1,11 +1,18 @@
 import { ref, type Ref } from "vue";
 
-export interface ResourceResult<T> {
-  data: Ref<T | null>;
+export interface ResourceResultProperties<T> {
+  data?: Ref<T | null>;
   refresh: () => Promise<void>;
   execute: () => Promise<void>;
+  mutate: (data: T) => void;
   isLoading: Ref<boolean>;
+  type: string;
 }
+
+export type ResourceResult<T> = [
+  Ref<T | null> | Promise<void>,
+  ResourceResultProperties<T>
+];
 
 export function queryBuilder(
   baseUrl: string,
@@ -73,37 +80,32 @@ export function useResource<T>(
     data.value = payload;
   };
 
-  if (
-    !fetcherConfig ||
-    typeof fetcherConfig == "string" ||
-    fetcherConfig?.method == "get"
-  ) {
+  const isQuery = !fetcherConfig ||
+  typeof fetcherConfig == "string" ||
+  fetcherConfig?.method == "get"
+  
+  if (isQuery) {
     fetchRequest();
   }
 
-  return {
+  return [
     // @ts-expect-error: we are sure of the type of data
     data,
-    refresh: fetchRequest,
-    execute: fetchRequest,
-    mutate,
-    isLoading,
-  };
-}
-
-type ResourceHook = typeof useResource;
-
-export interface CreateResourceProps {
-  piniaPath: string;
-  baseUrl: string;
-  endpoints: (builder: any) => Record<string, any>;
+    {
+      refresh: fetchRequest,
+      execute: fetchRequest,
+      mutate,
+      isLoading,
+      type: isQuery ? "query" : "mutation",
+    },
+  ];
 }
 
 interface IQueryConfig {
   query: (...args: any[]) => string;
 }
 
-function createBuilder(baseUrl: string) {
+export function createBuilder(baseUrl: string) {
   return {
     query: (config: IQueryConfig) => {
       return config.query();
@@ -117,28 +119,5 @@ function createBuilder(baseUrl: string) {
 function RHC<T>(): ResourceResult<T> {
   return useResource<T>("");
 }
+
 export type ResourceHookCaller = typeof RHC;
-export function createResource({
-  piniaPath,
-  baseUrl,
-  endpoints,
-}: CreateResourceProps) {
-  const context: Record<string, ResourceHookCaller> = {};
-
-  Object.entries(endpoints(createBuilder(baseUrl))).forEach(
-    ([hookName, config]) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore - this is a hack to get the type of the function
-      const builtEndpointName = `use${capitalize(hookName)}Resource`;
-      const functionDefinition = function <T>() {
-        return useResource<T>(baseUrl, config, queryBuilder);
-      };
-      Object.assign(context || {}, {[builtEndpointName]: functionDefinition });
-    },
-    {}
-  );
-
-  return context;
-}
-
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

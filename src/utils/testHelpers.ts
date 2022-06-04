@@ -14,3 +14,5 @@ export function withSetup<T>(composable: any): [any: T, app: App<Element>] {
   // @ts-expect-error: we are sure of the type of result
   return [result, app];
 }
+
+export const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
