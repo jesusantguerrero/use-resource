@@ -31,10 +31,26 @@ export const siteSlice = createResource({
   },
 });
 
-export const { useFetchSitesResource, useRunCheckResource, piniaPath } =
-  siteSlice;
+export const {
+  useFetchSitesResource,
+  useUpdateSiteResource,
+  useRunCheckResource,
+  piniaPath,
+} = siteSlice;
 
-export const useStore = <T>() => {
-  const store = defineStore(siteSlice.piniaPath, siteSlice.getStores<T>());
-  return store();
-};
+interface ISite {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  title: string;
+  url: string;
+  selector: string;
+  actions: Record<string, string>;
+  results: string[];
+  published: boolean;
+}
+
+export const useStore = defineStore(
+  siteSlice.piniaPath,
+  siteSlice.getStores<ISite[]>()
+);

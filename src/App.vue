@@ -1,19 +1,25 @@
 <script setup lang="ts">
-import { useRunCheckResource, useStore } from "./features/sites";
-interface ISite {
-  id: number;
-  createdAt: string;
-  updatedAt: string;
-  title: string;
-  url: string;
-  selector: string;
-  actions: Record<string, string>;
-  results: string[];
-  published: boolean;
-}
+import { ref, toRaw, unref, type Ref } from "vue";
+import {
+  useUpdateSiteResource,
+  useRunCheckResource,
+  useStore,
+  type ISite,
+} from "./features/sites";
 
-const store = useStore<ISite[]>();
-const { execute: runCheck, isLoading: isChecking } = useRunCheckResource();
+const store = useStore();
+const [runCheck, { isLoading: isChecking, mutate }] = useRunCheckResource();
+const [updateSite] = useUpdateSiteResource();
+console.log(updateSite);
+
+const siteToEdit = ref<ISite>();
+const editSite = (site: ISite) => {
+  siteToEdit.value = site;
+};
+
+const isEditing = (siteId: number) => {
+  return siteToEdit.value && siteToEdit.value.id === siteId;
+};
 </script>
 
 <template>
@@ -27,9 +33,13 @@ const { execute: runCheck, isLoading: isChecking } = useRunCheckResource();
     </header>
     <ul v-if="store.data">
       <li v-for="site in store.data" :key="site.id">
-        <router-link :to="{ name: 'site', params: { id: site.id } }">
-          {{ site.title }}
-        </router-link>
+        <p v-if="!isEditing(site.id)">
+          {{ site.title }} <button @click="editSite(site)">Edit</button>
+        </p>
+        <div v-else>
+          <input v-model="site.title" />
+          <button @click="updateSite(site.id, siteToEdit)">Update</button>
+        </div>
       </li>
     </ul>
     <template v-else-if="store.isLoading">
