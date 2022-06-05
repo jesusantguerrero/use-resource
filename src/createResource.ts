@@ -9,7 +9,7 @@ import {
 import generateStores from "./generateStores";
 
 export interface EndpointConfig {
-  query: (...args: any[]) => string;
+  query: (...args: any[]) => string | Record<string, any>;
 }
 export interface CreateResourceProps {
   piniaPath: string;

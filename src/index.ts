@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+import type { EndpointConfig } from "./createResource";
 
 export interface ResourceResultProperties<T> {
   data?: Ref<T | null>;
@@ -14,32 +15,28 @@ export type ResourceResult<T> = [
   ResourceResultProperties<T>
 ];
 
-export function queryBuilder(
-  baseUrl: string,
-  fetcherConfig?: string | Record<string, any>
-) {
-  let defaultConfig = {
-    url: baseUrl,
-  };
-
-  if (fetcherConfig && typeof fetcherConfig == "string") {
-    defaultConfig = {
-      url: `${baseUrl}${fetcherConfig}`,
+export function queryBuilder(baseUrl: string, config?: EndpointConfig) {
+  return function <T>(args: any): any {
+    const fetcherConfig = {
+      url: baseUrl,
+      method: "get",
+      body: null,
     };
-  } else if (fetcherConfig) {
-    defaultConfig = {
-      // @ts-expect-error: we are sure of the type of fetcherConfig
+    console.log(config, "this is the config")
+    if (config) {
+      const params = config.query(args);
+      if (typeof params === "string") {
+        fetcherConfig.url += params;
+      } else {
+        fetcherConfig.url += params.url;
+        fetcherConfig.method = params.method;
+        fetcherConfig.body = params.body;
+      }
+    }
+
+
+    return fetch(fetcherConfig?.url, {
       ...fetcherConfig,
-      // @ts-expect-error: we know is not a string at this point
-      url: baseUrl + fetcherConfig?.url,
-    };
-  }
-
-  return function <T>(method = "get", config = fetcherConfig): any {
-    return fetch(defaultConfig?.url, {
-      method,
-      // @ts-expect-error: we are sure of the type of config
-      ...config,
     }).then((response) => {
       return response.json();
     });
@@ -63,11 +60,11 @@ export function useResource<T>(
   const isLoading = ref(false);
   const builder = localFetcher(baseUrl, fetcherConfig);
 
-  const fetchRequest = async () => {
+  const fetchRequest = async (...args) => {
     try {
       isLoading.value = true;
       data.value = undefined;
-      const result = await builder();
+      const result = await builder(args);
       data.value = result;
     } catch (err) {
       console.error(err);
@@ -80,17 +77,18 @@ export function useResource<T>(
     data.value = payload;
   };
 
-  const isQuery = !fetcherConfig ||
-  typeof fetcherConfig == "string" ||
-  fetcherConfig?.method == "get"
-  
+  const isQuery =
+    !fetcherConfig ||
+    typeof fetcherConfig == "string" ||
+    fetcherConfig?.method == "get";
+
   if (isQuery) {
     fetchRequest();
   }
 
   return [
     // @ts-expect-error: we are sure of the type of data
-    data,
+    isQuery ? data : fetchRequest,
     {
       refresh: fetchRequest,
       execute: fetchRequest,
