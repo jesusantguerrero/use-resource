@@ -17,6 +17,11 @@ const editSite = (site: ISite) => {
   siteToEdit.value = site;
 };
 
+const update = () => {
+  updateSite(siteToEdit.value.id, toRaw(siteToEdit.value));
+  siteToEdit.value = null;
+}
+
 const isEditing = (siteId: number) => {
   return siteToEdit.value && siteToEdit.value.id === siteId;
 };
@@ -38,7 +43,7 @@ const isEditing = (siteId: number) => {
         </p>
         <div v-else>
           <input v-model="site.title" />
-          <button @click="updateSite(site.id, siteToEdit)">Update</button>
+          <button @click="update()">Update</button>
         </div>
       </li>
     </ul>

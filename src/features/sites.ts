@@ -3,31 +3,32 @@ import { defineStore } from "pinia";
 export const siteSlice = createResource({
   piniaPath: "sites",
   baseUrl: "http://161.35.141.190:5000/api/v1",
-  endpoints(builder): Record<string, any> {
-    return {
-      fetchSites: builder.query({
-        query: () => `/sites`,
+  endpoints: {
+    fetchSites: {
+      query: () => `/sites`,
+    },
+    updateSite: {
+      mutation: true,
+      query: (id: string, data: Record<string, any>) => ({
+        url: `/sites/${id}`,
+        method: "PATCH",
+        body: data,
       }),
-      updateSite: builder.mutation({
-        query: (id: string, patch: Record<string, any>) => ({
-          url: `/sites/${id}`,
-          method: "PATCH",
-          body: patch,
-        }),
+    },
+    deleteSite: {
+      mutation: true,
+      query: (id: string) => ({
+        url: `/sites/${id}`,
+        method: "DELETE",
       }),
-      deleteSite: builder.mutation({
-        query: (id: string) => ({
-          url: `/sites/${id}`,
-          method: "DELETE",
-        }),
+    },
+    runCheck: {
+      mutation: true,
+      query: () => ({
+        url: `/sites/check`,
+        method: "POST",
       }),
-      runCheck: builder.mutation({
-        query: () => ({
-          url: `/sites/check`,
-          method: "POST",
-        }),
-      }),
-    };
+    },
   },
 });
 

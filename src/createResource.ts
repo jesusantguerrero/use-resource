@@ -9,12 +9,13 @@ import {
 import generateStores from "./generateStores";
 
 export interface EndpointConfig {
+  mutation?: boolean;
   query: (...args: any[]) => string | Record<string, any>;
 }
 export interface CreateResourceProps {
   piniaPath: string;
   baseUrl: string;
-  endpoints: (builder: any) => Record<string, EndpointConfig>;
+  endpoints: Record<string, EndpointConfig>;
 }
 
 export interface ResourceReturn {
@@ -29,18 +30,15 @@ export function createResource({
 }: CreateResourceProps) {
   const context: Record<string, ResourceHookCaller> = {};
 
-  Object.entries(endpoints(createBuilder(baseUrl))).forEach(
-    ([hookName, endpointConfig]) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore - this is a hack to get the type of the function
-      const builtEndpointName = `use${capitalize(hookName)}Resource`;
-      const functionDefinition = function <T>() {
-        return useResource<T>(baseUrl, endpointConfig, queryBuilder);
-      };
-      Object.assign(context || {}, { [builtEndpointName]: functionDefinition });
-    },
-    {}
-  );
+  Object.entries(endpoints).forEach(([hookName, endpointConfig]) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - this is a hack to get the type of the function
+    const builtEndpointName = `use${capitalize(hookName)}Resource`;
+    const functionDefinition = function <T>() {
+      return useResource<T>(baseUrl, endpointConfig, queryBuilder);
+    };
+    Object.assign(context || {}, { [builtEndpointName]: functionDefinition });
+  }, {});
 
   return {
     piniaPath,

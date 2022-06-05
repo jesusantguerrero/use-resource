@@ -22,9 +22,9 @@ export function queryBuilder(baseUrl: string, config?: EndpointConfig) {
       method: "get",
       body: null,
     };
-    console.log(config, "this is the config")
+    console.log(config, "this is the config");
     if (config) {
-      const params = config.query(args);
+      const params = config.query(...args);
       if (typeof params === "string") {
         fetcherConfig.url += params;
       } else {
@@ -34,9 +34,9 @@ export function queryBuilder(baseUrl: string, config?: EndpointConfig) {
       }
     }
 
-
     return fetch(fetcherConfig?.url, {
-      ...fetcherConfig,
+      method: fetcherConfig?.method,
+      body: !fetcherConfig?.body ? null : JSON.stringify(fetcherConfig?.body),
     }).then((response) => {
       return response.json();
     });
@@ -47,18 +47,18 @@ export type ResourceFetcher = typeof queryBuilder;
 
 export function useResource<T>(
   baseUrl: string,
-  fetcherConfig?: string | Record<string, any>,
+  endpointConfig?: string | Record<string, any>,
   fetcher?: ResourceFetcher
 ): ResourceResult<T>;
 export function useResource<T>(
   baseUrl: string,
-  fetcherConfig?: string | Record<string, any>,
+  endpointConfig?: EndpointConfig,
   fetcher: ResourceFetcher = queryBuilder
 ): ResourceResult<T> {
   const localFetcher = fetcher || queryBuilder;
   const data = ref<T>();
   const isLoading = ref(false);
-  const builder = localFetcher(baseUrl, fetcherConfig);
+  const builder = localFetcher(baseUrl, endpointConfig);
 
   const fetchRequest = async (...args) => {
     try {
@@ -77,11 +77,7 @@ export function useResource<T>(
     data.value = payload;
   };
 
-  const isQuery =
-    !fetcherConfig ||
-    typeof fetcherConfig == "string" ||
-    fetcherConfig?.method == "get";
-
+  const isQuery = !endpointConfig || !endpointConfig.mutation;
   if (isQuery) {
     fetchRequest();
   }
