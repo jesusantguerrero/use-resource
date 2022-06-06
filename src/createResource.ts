@@ -1,9 +1,11 @@
-import { capitalize, type Ref } from "vue";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { capitalize } from "vue";
 import {
   queryBuilder,
   useResource,
   type ResourceHookCaller,
-  type ResourceResult,
+  type ResourceQueryResult,
+  type ResourceMutatorResult,
 } from ".";
 import generateStores, { type ResourceStore } from "./generateStores";
 
@@ -26,9 +28,10 @@ export type ResourceReturn = {
   piniaPath?: string;
   getStores: <T>() => () => ResourceStore<T>;
 } & {
-  [key in ContextType]: <T>() => ResourceResult<T>;
+  [key in ContextType]: <T>() =>
+    | ResourceQueryResult<T>
+    | ResourceMutatorResult<T>;
 };
-
 
 export function createResource({
   piniaPath,

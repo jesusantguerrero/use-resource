@@ -10,8 +10,13 @@ export interface ResourceResultProperties<T> {
   type: string;
 }
 
-export type ResourceResult<T> = [
-  Ref<T | null> | Promise<void>,
+export type ResourceQueryResult<T> = [
+  Ref<T | null>,
+  ResourceResultProperties<T>
+];
+
+export type ResourceMutatorResult<T> = [
+  Promise<void>,
   ResourceResultProperties<T>
 ];
 
@@ -45,22 +50,34 @@ export function queryBuilder(baseUrl: string, config?: EndpointConfig) {
 
 export type ResourceFetcher = typeof queryBuilder;
 
+export interface useResourceArgs {
+  baseUrl: string;
+  endpointConfig?: EndpointConfig;
+  fetcher: ResourceFetcher;
+}
+
 export function useResource<T>(
   baseUrl: string,
-  endpointConfig?: string | Record<string, any>,
+  endpointConfig?: EndpointConfig,
   fetcher?: ResourceFetcher
-): ResourceResult<T>;
+): ResourceQueryResult<T>;
+export function useResource<T>(
+  baseUrl: string,
+  endpointConfig?: EndpointConfig,
+  fetcher?: ResourceFetcher
+): ResourceMutatorResult<T>;
+
 export function useResource<T>(
   baseUrl: string,
   endpointConfig?: EndpointConfig,
   fetcher: ResourceFetcher = queryBuilder
-): ResourceResult<T> {
+): ResourceQueryResult<T> | ResourceMutatorResult<T> {
   const localFetcher = fetcher || queryBuilder;
   const data = ref<T>();
   const isLoading = ref(false);
   const builder = localFetcher(baseUrl, endpointConfig);
 
-  const fetchRequest = async (...args) => {
+  const fetchRequest = async (...args: any[]) => {
     try {
       isLoading.value = true;
       data.value = undefined;
@@ -95,22 +112,7 @@ export function useResource<T>(
   ];
 }
 
-interface IQueryConfig {
-  query: (...args: any[]) => string;
-}
-
-export function createBuilder(baseUrl: string) {
-  return {
-    query: (config: IQueryConfig) => {
-      return config.query();
-    },
-    mutation: (config: IQueryConfig) => {
-      return config.query();
-    },
-  };
-}
-
-function RHC<T>(): ResourceResult<T> {
+export function RHC<T>(): ResourceQueryResult<T> | ResourceMutatorResult<T> {
   return useResource<T>("");
 }
 
