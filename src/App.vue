@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, toRaw, unref, type Ref } from "vue";
+import { ref, toRaw } from "vue";
 import {
   useUpdateSiteResource,
   useRunCheckResource,
@@ -8,8 +8,8 @@ import {
 } from "./features/sites";
 
 const store = useStore();
-const [runCheck, { isLoading: isChecking, mutate }] = useRunCheckResource();
-const [updateSite] = useUpdateSiteResource();
+const [runCheck, { isLoading: isChecking }] = useRunCheckResource();
+const [updateSite] = useUpdateSiteResource<ISite>();
 console.log(updateSite);
 
 const siteToEdit = ref<ISite>();

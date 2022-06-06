@@ -1,6 +1,19 @@
-import { toRefs } from "vue";
+import type { Ref } from "vue";
 import type { ResourceHookCaller } from ".";
 
+export type ResourceStoreGenerator = typeof generateStores;
+
+type ResourceKeyType = "mutator" | "data";
+export type ResourceStore<T> = {
+  data?: Ref<T | null>;
+  refresh: () => Promise<void>;
+  execute: () => Promise<void>;
+  mutate: (data: T) => void;
+  isLoading: Ref<boolean>;
+  type: string;
+} & {
+  [key in ResourceKeyType]: Promise<void> | Ref<T | null>;
+};
 export default function generateStores<T>(
   context: Record<string, ResourceHookCaller>
 ) {

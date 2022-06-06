@@ -1,5 +1,6 @@
 import { createResource } from "../createResource";
 import { defineStore } from "pinia";
+
 export const siteSlice = createResource({
   piniaPath: "sites",
   baseUrl: "http://161.35.141.190:5000/api/v1",
@@ -32,14 +33,10 @@ export const siteSlice = createResource({
   },
 });
 
-export const {
-  useFetchSitesResource,
-  useUpdateSiteResource,
-  useRunCheckResource,
-  piniaPath,
-} = siteSlice;
+export const { useUpdateSiteResource, useRunCheckResource, piniaPath } =
+  siteSlice;
 
-interface ISite {
+export interface ISite {
   id: number;
   createdAt: string;
   updatedAt: string;
@@ -52,6 +49,6 @@ interface ISite {
 }
 
 export const useStore = defineStore(
-  siteSlice.piniaPath,
+  siteSlice.piniaPath || "sites",
   siteSlice.getStores<ISite[]>()
 );

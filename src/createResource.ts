@@ -1,48 +1,61 @@
-import { capitalize } from "vue";
+import { capitalize, type Ref } from "vue";
 import {
-  createBuilder,
   queryBuilder,
   useResource,
   type ResourceHookCaller,
   type ResourceResult,
 } from ".";
-import generateStores from "./generateStores";
+import generateStores, { type ResourceStore } from "./generateStores";
 
 export interface EndpointConfig {
   mutation?: boolean;
   query: (...args: any[]) => string | Record<string, any>;
 }
 export interface CreateResourceProps {
-  piniaPath: string;
+  piniaPath?: string;
   baseUrl: string;
   endpoints: Record<string, EndpointConfig>;
 }
 
-export interface ResourceReturn {
-  piniaPath: string;
-  getStores: <T>() => ResourceResult<T>;
-  [key: string]: <T>() => ResourceResult<T>;
-}
+const CustomContext: Record<string, ResourceHookCaller> = {};
+
+type EndpointCollection = Record<string, ResourceHookCaller>;
+export type ContextType = keyof EndpointCollection;
+
+export type ResourceReturn = {
+  piniaPath?: string;
+  getStores: <T>() => () => ResourceStore<T>;
+} & {
+  [key in ContextType]: <T>() => ResourceResult<T>;
+};
+
+
 export function createResource({
   piniaPath,
   baseUrl,
   endpoints,
-}: CreateResourceProps) {
-  const context: Record<string, ResourceHookCaller> = {};
-
-  Object.entries(endpoints).forEach(([hookName, endpointConfig]) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore - this is a hack to get the type of the function
-    const builtEndpointName = `use${capitalize(hookName)}Resource`;
-    const functionDefinition = function <T>() {
-      return useResource<T>(baseUrl, endpointConfig, queryBuilder);
-    };
-    Object.assign(context || {}, { [builtEndpointName]: functionDefinition });
-  }, {});
+}: CreateResourceProps): ResourceReturn {
+  buildEndpoints(baseUrl, endpoints, CustomContext);
 
   return {
     piniaPath,
+    // @ts-expect-error : we are sure of the type of data
     getStores: <T>() => generateStores<T>(context),
-    ...context,
+    ...CustomContext,
   };
+}
+
+export function buildEndpoints(
+  baseUrl: string,
+  endpoints: Record<string, EndpointConfig>,
+  context: Record<string, ResourceHookCaller>
+) {
+  for (const [hookName, endpointConfig] of Object.entries(endpoints)) {
+    const builtEndpointName = `use${capitalize(hookName)}Resource`;
+    const functionDefinition: ResourceHookCaller = function <T>() {
+      return useResource<T>(baseUrl, endpointConfig, queryBuilder);
+    };
+    context[builtEndpointName] = functionDefinition;
+  }
+  return context;
 }
