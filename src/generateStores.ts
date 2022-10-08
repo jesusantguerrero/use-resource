@@ -1,5 +1,6 @@
+import type { log } from "console";
 import type { Ref } from "vue";
-import type { ResourceHookCaller } from ".";
+import type { ResourceHookCaller } from "./useResource";
 
 export type ResourceStoreGenerator = typeof generateStores;
 
@@ -19,6 +20,7 @@ export default function generateStores<T>(
 ) {
   return function () {
     const [main, reducer] = context.useFetchSitesResource<T>();
+    console.log(main, reducer);
 
     const hookMainName = reducer.type == "mutator" ? "mutator" : "data";
     return {

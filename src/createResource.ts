@@ -6,20 +6,18 @@ import {
   type ResourceHookCaller,
   type ResourceQueryResult,
   type ResourceMutatorResult,
-} from ".";
+} from "./useResource";
 import generateStores, { type ResourceStore } from "./generateStores";
 
 export interface EndpointConfig {
-  mutation?: boolean;
+  method: "POST" | "GET" | "PATCH" | "DELETE";
   query: (...args: any[]) => string | Record<string, any>;
 }
-export interface CreateResourceProps {
+export interface ResourceOptions {
   piniaPath?: string;
   baseUrl: string;
   endpoints: Record<string, EndpointConfig>;
 }
-
-const CustomContext: Record<string, ResourceHookCaller> = {};
 
 type EndpointCollection = Record<string, ResourceHookCaller>;
 export type ContextType = keyof EndpointCollection;
@@ -37,23 +35,25 @@ export function createResource({
   piniaPath,
   baseUrl,
   endpoints,
-}: CreateResourceProps): ResourceReturn {
-  buildEndpoints(baseUrl, endpoints, CustomContext);
+}: ResourceOptions): ResourceReturn {
+  const context = buildEndpoints(baseUrl, endpoints);
 
   return {
     piniaPath,
     // @ts-expect-error : we are sure of the type of data
     getStores: <T>() => generateStores<T>(context),
-    ...CustomContext,
+    ...context,
   };
 }
 
 export function buildEndpoints(
   baseUrl: string,
-  endpoints: Record<string, EndpointConfig>,
-  context: Record<string, ResourceHookCaller>
+  endpoints: Record<string, EndpointConfig>
 ) {
+  const context: Record<string, ResourceHookCaller> = {};
+
   for (const [hookName, endpointConfig] of Object.entries(endpoints)) {
+    console.log(endpointConfig);
     const builtEndpointName = `use${capitalize(hookName)}Resource`;
     const functionDefinition: ResourceHookCaller = function <T>() {
       return useResource<T>(baseUrl, endpointConfig, queryBuilder);
