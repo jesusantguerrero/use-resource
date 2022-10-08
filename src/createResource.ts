@@ -53,7 +53,6 @@ export function buildEndpoints(
   const context: Record<string, ResourceHookCaller> = {};
 
   for (const [hookName, endpointConfig] of Object.entries(endpoints)) {
-    console.log(endpointConfig);
     const builtEndpointName = `use${capitalize(hookName)}Resource`;
     const functionDefinition: ResourceHookCaller = function <T>() {
       return useResource<T>(baseUrl, endpointConfig, queryBuilder);

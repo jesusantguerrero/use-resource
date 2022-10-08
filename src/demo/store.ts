@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
 
-import { piniaPath, siteApi } from "./features/sites";
+import { siteApi } from "./features/sites";
+import type { ISite } from "./interfaces";
 
 export const useStore = defineStore(
-  siteApi.piniaPath || "sites",
+  siteApi.piniaPath,
   siteApi.getStores<ISite[]>()
 );

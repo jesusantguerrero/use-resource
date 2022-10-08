@@ -21,10 +21,11 @@ export type ResourceMutatorResult<T> = [
 ];
 
 export function queryBuilder(baseUrl: string, config?: EndpointConfig) {
-  return function <T>(args: any): any {
+  return function(args: any): any {
     const fetcherConfig = {
       url: baseUrl,
       body: null,
+      method: "get",
     };
 
     if (config) {
@@ -38,7 +39,7 @@ export function queryBuilder(baseUrl: string, config?: EndpointConfig) {
       }
     }
 
-    return fetch<T>(fetcherConfig?.url, {
+    return fetch(fetcherConfig?.url, {
       method: fetcherConfig?.method,
       body: !fetcherConfig?.body ? null : JSON.stringify(fetcherConfig?.body),
     }).then((response) => {

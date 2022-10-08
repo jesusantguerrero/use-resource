@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, toRaw } from "vue";
+import { onMounted, ref, toRaw } from "vue";
 import {
   useUpdateSiteResource,
   useRunCheckResource,
   useFetchSitesResource,
 } from "./features/sites";
-import type { ISite } from "./features/sites";
+import type { ISite } from "./interfaces";
 
 const [runCheck, { isLoading: isChecking }] = useRunCheckResource();
 const [updateSite] = useUpdateSiteResource<ISite>();
