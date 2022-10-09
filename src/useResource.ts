@@ -1,7 +1,7 @@
 import { ref, type Ref } from "vue";
-import type { EndpointConfig } from "./createResource";
+import type { EndpointConfig, EndpointMutatorConfig } from "./createResource";
 
-export interface ResourceResultProperties<T> {
+export interface ResourceProperties<T> {
   data?: Ref<T | null>;
   refresh: () => Promise<void>;
   execute: () => Promise<void>;
@@ -10,34 +10,34 @@ export interface ResourceResultProperties<T> {
   type: string;
 }
 
-export type ResourceQueryResult<T> = [
-  Ref<T | null>,
-  ResourceResultProperties<T>
-];
+export type ResourceQuery<T> = [Ref<T | null>, ResourceProperties<T>];
 
-export type ResourceMutatorResult<T> = [
-  Promise<void>,
-  ResourceResultProperties<T>
-];
+export type ResourceMutator<T> = [Promise<void>, ResourceProperties<T>];
+
+const getConfig = (args: any, baseUrl: string, config?: EndpointConfig) => {
+  const fetcherConfig = {
+    url: baseUrl,
+    body: null,
+    method: "get",
+  };
+
+  if (config) {
+    const params = config.query(...args);
+    if (typeof params === "string") {
+      fetcherConfig.url += params;
+    } else {
+      fetcherConfig.url += params.url;
+      fetcherConfig.method = config.method || "GET";
+      fetcherConfig.body = params.body;
+    }
+  }
+
+  return fetcherConfig;
+};
 
 export function queryBuilder(baseUrl: string, config?: EndpointConfig) {
-  return function(args: any): any {
-    const fetcherConfig = {
-      url: baseUrl,
-      body: null,
-      method: "get",
-    };
-
-    if (config) {
-      const params = config.query(...args);
-      if (typeof params === "string") {
-        fetcherConfig.url += params;
-      } else {
-        fetcherConfig.url += params.url;
-        fetcherConfig.method = config.method || "GET";
-        fetcherConfig.body = params.body;
-      }
-    }
+  return function (args: any): any {
+    const fetcherConfig = getConfig(args, baseUrl, config);
 
     return fetch(fetcherConfig?.url, {
       method: fetcherConfig?.method,
@@ -58,15 +58,17 @@ export interface useResourceArgs {
 
 export function useResource<T>(
   baseUrl: string,
-  endpointConfig?: EndpointConfig,
+  endpointConfig: EndpointConfig,
   fetcher?: ResourceFetcher
-): ResourceQueryResult<T>;
+): EndpointConfig extends EndpointMutatorConfig
+  ? ResourceMutator<T>
+  : ResourceQuery<T>;
 
 export function useResource<T>(
   baseUrl: string,
-  endpointConfig?: EndpointConfig,
+  endpointConfig: EndpointConfig,
   fetcher: ResourceFetcher = queryBuilder
-): ResourceQueryResult<T> | ResourceMutatorResult<T> {
+) {
   const localFetcher = fetcher || queryBuilder;
   const data = ref<T>();
   const isLoading = ref(false);
@@ -89,13 +91,12 @@ export function useResource<T>(
     data.value = payload;
   };
 
-  const isQuery = !endpointConfig || endpointConfig.method == "GET";
+  const isQuery = endpointConfig.method !== "GET";
   if (isQuery) {
     fetchRequest();
   }
 
   return [
-    // @ts-expect-error: we are sure of the type of data
     isQuery ? data : fetchRequest,
     {
       refresh: fetchRequest,
@@ -107,8 +108,4 @@ export function useResource<T>(
   ];
 }
 
-export function RHC<T>(): ResourceQueryResult<T> | ResourceMutatorResult<T> {
-  return useResource<T>("");
-}
-
-export type ResourceHookCaller = typeof RHC;
+export type ResourceHook = typeof useResource;

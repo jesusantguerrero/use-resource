@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, toRaw } from "vue";
+import { ref, toRaw } from "vue";
 import {
   useUpdateSiteResource,
   useRunCheckResource,
@@ -8,8 +8,8 @@ import {
 import type { ISite } from "./interfaces";
 
 const [runCheck, { isLoading: isChecking }] = useRunCheckResource();
-const [updateSite] = useUpdateSiteResource<ISite>();
-const [data, { isLoading, refresh }] = useFetchSitesResource<ISite[]>();
+const [updateSite] = useUpdateSiteResource();
+const [sites, { isLoading, refresh }] = useFetchSitesResource();
 
 const siteToEdit = ref<ISite>();
 const editSite = (site: ISite) => {
@@ -35,8 +35,8 @@ const isEditing = (siteId: number) => {
         {{ isChecking ? "Checking..." : "Check Sites" }}
       </button>
     </header>
-    <ul v-if="data">
-      <li v-for="site in data" :key="site.id">
+    <ul v-if="sites">
+      <li v-for="site in sites" :key="site.id">
         <p v-if="!isEditing(site.id)">
           {{ site.title }} <button @click="editSite(site)">Edit</button>
         </p>
