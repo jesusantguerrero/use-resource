@@ -5,42 +5,38 @@ import { createResource, useResource } from "../../index";
 
 export const siteApi = createResource<ISite[]>({
   baseUrl: config.sitesEndpoint,
-  endpoints: {
-    fetchSites: {
-      method: "GET",
+  endpoints: (builder) => ({
+    fetchSites: builder.query<ISite[], void>({
       query: () => `/sites`,
-    },
-    storeSite: {
-      mutator: true,
-      method: "POST",
+    }),
+    storeSite: builder.mutation({
       query: (data: Record<string, any>) => ({
+        method: "POST",
         url: `/sites/`,
         body: data,
       }),
-    },
-    updateSite: {
-      mutator: true,
-      method: "PATCH",
+    }),
+    updateSite: builder.mutation({
       query: (id: string, data: Record<string, any>) => ({
+        method: "PATCH",
         url: `/sites/${id}`,
         body: data,
       }),
-    },
-    deleteSite: {
-      mutator: true,
-      method: "DELETE",
+    }),
+    deleteSite: builder.mutation({
       query: (id: string) => ({
+        method: "DELETE",
         url: `/sites/${id}`,
       }),
-    },
-    runCheck: {
+    }),
+    runCheck: builder.mutation({
       mutator: true,
       method: "POST",
       query: () => ({
         url: `/sites/check`,
       }),
-    },
-  },
+    }),
+  }),
 });
 
 export const {
@@ -49,19 +45,3 @@ export const {
   useFetchSitesResource,
   useStoreSiteResource,
 } = siteApi;
-
-const [data, { refresh }] = useResource<ISite[]>(config.sitesEndpoint, {
-  method: "GET",
-  query: () => `/sites`,
-});
-const configuration: EndpointMutatorConfig = {
-  method: "POST",
-  mutator: true,
-  query: () => `/sites`,
-};
-const [addSite, { isLoading }] = useResource<ISite[]>(
-  config.sitesEndpoint,
-  configuration
-);
-
-addSite();

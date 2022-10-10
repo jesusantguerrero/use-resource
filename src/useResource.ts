@@ -1,8 +1,7 @@
-import { ref, type Ref } from "vue";
-import type { EndpointConfig, EndpointMutatorConfig } from "./createResource";
+import { ref, unref, type Ref } from "vue";
+import type { EndpointConfig } from "./createResource";
 
 export interface ResourceProperties<T> {
-  data?: Ref<T | null>;
   refresh: () => Promise<void>;
   execute: () => Promise<void>;
   mutate: (data: T) => void;
@@ -12,7 +11,10 @@ export interface ResourceProperties<T> {
 
 export type ResourceQuery<T> = [Ref<T | null>, ResourceProperties<T>];
 
-export type ResourceMutator<T> = [Promise<void>, ResourceProperties<T>];
+export type ResourceMutator<T> = [
+  <T>(...args: any[]) => Promise<void | T>,
+  ResourceProperties<T>
+];
 
 const getConfig = (args: any, baseUrl: string, config?: EndpointConfig) => {
   const fetcherConfig = {
@@ -27,7 +29,7 @@ const getConfig = (args: any, baseUrl: string, config?: EndpointConfig) => {
       fetcherConfig.url += params;
     } else {
       fetcherConfig.url += params.url;
-      fetcherConfig.method = config.method || "GET";
+      fetcherConfig.method = params.method || "GET";
       fetcherConfig.body = params.body;
     }
   }
@@ -56,28 +58,46 @@ export interface useResourceArgs {
   fetcher: ResourceFetcher;
 }
 
-export function useResource<T>(
-  baseUrl: string,
-  endpointConfig: EndpointConfig,
-  fetcher?: ResourceFetcher
-): EndpointConfig extends EndpointMutatorConfig
-  ? ResourceMutator<T>
-  : ResourceQuery<T>;
+export enum QueryType {
+  query,
+  mutator,
+}
+export interface useResourceArgs {
+  baseUrl: string;
+  endpointConfig?: EndpointConfig;
+  type: QueryType;
+  fetcher: ResourceFetcher;
+}
 
 export function useResource<T>(
   baseUrl: string,
   endpointConfig: EndpointConfig,
+  type: QueryType.query,
+  fetcher?: ResourceFetcher
+): ResourceQuery<T>;
+
+export function useResource<T>(
+  baseUrl: string,
+  endpointConfig: EndpointConfig,
+  type: QueryType.mutator,
+  fetcher?: ResourceFetcher
+): ResourceMutator<T>;
+
+export function useResource<T>(
+  baseUrl: string,
+  endpointConfig: EndpointConfig,
+  type: QueryType.query | QueryType.mutator,
   fetcher: ResourceFetcher = queryBuilder
-) {
+): ResourceMutator<T> | ResourceQuery<T> {
   const localFetcher = fetcher || queryBuilder;
-  const data = ref<T>();
+  const data = ref<T | null>(null) as Ref<T | null>;
   const isLoading = ref(false);
   const builder = localFetcher(baseUrl, endpointConfig);
 
-  const fetchRequest = async (...args: any[]) => {
+  const fetchRequest = async <T>(...args: any[]): Promise<T | void> => {
     try {
       isLoading.value = true;
-      data.value = undefined;
+      data.value = null;
       const result = await builder(args);
       data.value = result;
     } catch (err) {
@@ -91,13 +111,13 @@ export function useResource<T>(
     data.value = payload;
   };
 
-  const isQuery = endpointConfig.method !== "GET";
+  const isQuery = type === QueryType.query;
   if (isQuery) {
     fetchRequest();
   }
 
   return [
-    isQuery ? data : fetchRequest,
+    isQuery ? data : fetchRequest<T>,
     {
       refresh: fetchRequest,
       execute: fetchRequest,

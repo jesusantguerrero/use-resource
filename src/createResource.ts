@@ -5,24 +5,25 @@ import {
   useResource,
   type ResourceQuery,
   type ResourceMutator,
+  QueryType,
 } from "./useResource";
 
-export interface EndpointQueryConfig {
-  method: "GET";
+export interface EndpointConfig {
   query: (...args: any[]) => string | Record<string, any>;
 }
 
-export interface EndpointMutatorConfig {
-  method: "POST" | "PATCH" | "DELETE";
-  query: (...args: any[]) => string | Record<string, any>;
-  mutator: boolean;
-}
-
-export type EndpointConfig = EndpointMutatorConfig | EndpointQueryConfig;
-export interface ResourceOptions {
+type Definitions<T> = () => ResourceQuery<T> | ResourceMutator<T>;
+export interface ResourceOptions<T> {
   baseUrl: string;
-  endpoints: Record<string, EndpointConfig>;
+  endpoints(
+    builder: EndpointBuilder
+  ): Record<string, () => ResourceQuery<T> | ResourceMutator<T>>;
 }
+
+type EndpointBuilder = {
+  query<ResultType>(definition: EndpointConfig): Definitions<ResultType>;
+  mutation<T>(definition: EndpointConfig): () => ResourceMutator<T>;
+};
 
 type EndpointCollection<T> = Record<
   string,
@@ -37,28 +38,28 @@ export type ResourceReturn<T> = {
 export function createResource<T>({
   baseUrl,
   endpoints,
-}: ResourceOptions): ResourceReturn<T> {
-  const context = buildEndpoints<T>(baseUrl, endpoints);
-
-  return {
-    ...context,
-  };
-}
-
-export function buildEndpoints<T>(
-  baseUrl: string,
-  endpoints: Record<string, EndpointConfig>
-): Record<string, () => ResourceQuery<T> | ResourceMutator<T>> {
+}: ResourceOptions<T>): Record<
+  string,
+  () => ResourceQuery<T> | ResourceMutator<T>
+> {
   const context: Record<string, () => ResourceQuery<T> | ResourceMutator<T>> =
     {};
 
-  for (const [hookName, endpointConfig] of Object.entries(endpoints)) {
-    const builtEndpointName = `use${capitalize(hookName)}Resource`;
-    const functionDefinition = function () {
-      const result = useResource<T>(baseUrl, endpointConfig, queryBuilder);
-      return result;
-    };
-    context[builtEndpointName] = functionDefinition;
+  const evaluated: Record<string, () => ResourceQuery<T> | ResourceMutator<T>> =
+    endpoints({
+      query:
+        <T>(config: EndpointConfig) =>
+        (): ResourceQuery<T> =>
+          useResource<T>(baseUrl, config, QueryType.query, queryBuilder),
+      mutation:
+        <T>(config: EndpointConfig) =>
+        (): ResourceMutator<T> =>
+          useResource<T>(baseUrl, config, QueryType.mutator, queryBuilder),
+    });
+
+  for (const [actionName, functionDefinition] of Object.entries(evaluated)) {
+    const endpointName = `use${capitalize(actionName)}Resource`;
+    context[endpointName] = functionDefinition;
   }
   return context;
 }
