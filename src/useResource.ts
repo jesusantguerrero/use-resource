@@ -88,7 +88,7 @@ export function useResource<T>(
   endpointConfig: EndpointConfig,
   type: QueryType.query | QueryType.mutator,
   fetcher: ResourceFetcher = queryBuilder
-): ResourceMutator<T> | ResourceQuery<T> {
+) {
   const localFetcher = fetcher || queryBuilder;
   const data = ref<T | null>(null) as Ref<T | null>;
   const isLoading = ref(false);
@@ -113,11 +113,11 @@ export function useResource<T>(
 
   const isQuery = type === QueryType.query;
   if (isQuery) {
-    fetchRequest();
+    fetchRequest<T>();
   }
 
   return [
-    isQuery ? data : fetchRequest<T>,
+    isQuery ? data : fetchRequest,
     {
       refresh: fetchRequest,
       execute: fetchRequest,

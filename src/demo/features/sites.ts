@@ -1,12 +1,11 @@
-import { EndpointMutatorConfig } from "./../../createResource";
 import { ISite } from "./../interfaces";
 import { config } from "./../config/index";
-import { createResource, useResource } from "../../index";
+import { createResource } from "../../index";
 
 export const siteApi = createResource<ISite[]>({
   baseUrl: config.sitesEndpoint,
   endpoints: (builder) => ({
-    fetchSites: builder.query<ISite[], void>({
+    fetchSites: builder.query<ISite[]>({
       query: () => `/sites`,
     }),
     storeSite: builder.mutation({
@@ -30,11 +29,19 @@ export const siteApi = createResource<ISite[]>({
       }),
     }),
     runCheck: builder.mutation({
-      mutator: true,
-      method: "POST",
       query: () => ({
+        method: "POST",
         url: `/sites/check`,
       }),
+    }),
+  }),
+});
+
+const { use } = createResource<ISite[]>({
+  baseUrl: config.sitesEndpoint,
+  endpoints: (builder) => ({
+    test: builder.query({
+      query: () => "/sites",
     }),
   }),
 });
