@@ -3,61 +3,63 @@ import { capitalize } from "vue";
 import {
   queryBuilder,
   useResource,
-  type ResourceHookCaller,
-  type ResourceQueryResult,
-  type ResourceMutatorResult,
+  type ResourceQuery,
+  type ResourceMutator,
+  QueryType,
 } from "./useResource";
-import generateStores, { type ResourceStore } from "./generateStores";
 
 export interface EndpointConfig {
-  method: "POST" | "GET" | "PATCH" | "DELETE";
   query: (...args: any[]) => string | Record<string, any>;
 }
-export interface ResourceOptions {
-  piniaPath?: string;
+
+type Definitions<T> = () => ResourceQuery<T> | ResourceMutator<T>;
+export interface ResourceOptions<T> {
   baseUrl: string;
-  endpoints: Record<string, EndpointConfig>;
+  endpoints(
+    builder: EndpointBuilder
+  ): Record<string, () => ResourceQuery<T> | ResourceMutator<T>>;
 }
 
-type EndpointCollection = Record<string, ResourceHookCaller>;
-export type ContextType = keyof EndpointCollection;
-
-export type ResourceReturn = {
-  piniaPath?: string;
-  getStores: <T>() => () => ResourceStore<T>;
-} & {
-  [key in ContextType]: <T>() =>
-    | ResourceQueryResult<T>
-    | ResourceMutatorResult<T>;
+type EndpointBuilder = {
+  query<ResultType>(definition: EndpointConfig): Definitions<ResultType>;
+  mutation<T>(definition: EndpointConfig): () => ResourceMutator<T>;
 };
 
-export function createResource({
-  piniaPath,
+type EndpointCollection<T> = Record<
+  string,
+  () => ResourceQuery<T> | ResourceMutator<T>
+>;
+export type ContextType<T> = keyof EndpointCollection<T>;
+
+export type ResourceReturn<T> = {
+  [key in ContextType<T>]: () => ResourceQuery<T> | ResourceMutator<T>;
+};
+
+export function createResource<T>({
   baseUrl,
   endpoints,
-}: ResourceOptions): ResourceReturn {
-  const context = buildEndpoints(baseUrl, endpoints);
+}: ResourceOptions<T>): Record<
+  string,
+  () => ResourceQuery<T> | ResourceMutator<T>
+> {
+  const context: Record<string, () => ResourceQuery<T> | ResourceMutator<T>> =
+    {};
 
-  return {
-    piniaPath,
-    // @ts-expect-error : we are sure of the type of data
-    getStores: <T>() => generateStores<T>(context),
-    ...context,
-  };
-}
+  const evaluated: Record<string, () => ResourceQuery<T> | ResourceMutator<T>> =
+    endpoints({
+      query:
+        <T>(config: EndpointConfig) =>
+        (): ResourceQuery<T> =>
+          useResource<T>(baseUrl, config, QueryType.query, queryBuilder),
+      mutation:
+        <T>(config: EndpointConfig) =>
+        (): ResourceMutator<T> =>
+          useResource<T>(baseUrl, config, QueryType.mutator, queryBuilder),
+    });
 
-export function buildEndpoints(
-  baseUrl: string,
-  endpoints: Record<string, EndpointConfig>
-) {
-  const context: Record<string, ResourceHookCaller> = {};
-
-  for (const [hookName, endpointConfig] of Object.entries(endpoints)) {
-    const builtEndpointName = `use${capitalize(hookName)}Resource`;
-    const functionDefinition: ResourceHookCaller = function <T>() {
-      return useResource<T>(baseUrl, endpointConfig, queryBuilder);
-    };
-    context[builtEndpointName] = functionDefinition;
+  for (const [actionName, functionDefinition] of Object.entries(evaluated)) {
+    const endpointName = `use${capitalize(actionName)}Resource`;
+    context[endpointName] = functionDefinition;
   }
   return context;
 }

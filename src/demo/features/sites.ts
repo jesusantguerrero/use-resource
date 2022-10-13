@@ -1,46 +1,54 @@
+import { ISite } from "./../interfaces";
 import { config } from "./../config/index";
-import { createResource } from "@/createResource";
+import { createResource } from "../../index";
 
-export const siteApi = createResource({
-  piniaPath: "sites",
+export const siteApi = createResource<ISite[]>({
   baseUrl: config.sitesEndpoint,
-  endpoints: {
-    fetchSites: {
-      method: "GET",
+  endpoints: (builder) => ({
+    fetchSites: builder.query<ISite[]>({
       query: () => `/sites`,
-    },
-    storeSite: {
-      method: "POST",
+    }),
+    storeSite: builder.mutation({
       query: (data: Record<string, any>) => ({
-        url: `/sites/${id}`,
+        method: "POST",
+        url: `/sites/`,
         body: data,
       }),
-    },
-    updateSite: {
-      method: "PATCH",
+    }),
+    updateSite: builder.mutation({
       query: (id: string, data: Record<string, any>) => ({
+        method: "PATCH",
         url: `/sites/${id}`,
         body: data,
       }),
-    },
-    deleteSite: {
-      method: "DELETE",
+    }),
+    deleteSite: builder.mutation({
       query: (id: string) => ({
+        method: "DELETE",
         url: `/sites/${id}`,
       }),
-    },
-    runCheck: {
-      method: "POST",
+    }),
+    runCheck: builder.mutation({
       query: () => ({
+        method: "POST",
         url: `/sites/check`,
       }),
-    },
-  },
+    }),
+  }),
+});
+
+const { use } = createResource<ISite[]>({
+  baseUrl: config.sitesEndpoint,
+  endpoints: (builder) => ({
+    test: builder.query({
+      query: () => "/sites",
+    }),
+  }),
 });
 
 export const {
   useUpdateSiteResource,
   useRunCheckResource,
   useFetchSitesResource,
-  piniaPath,
+  useStoreSiteResource,
 } = siteApi;
